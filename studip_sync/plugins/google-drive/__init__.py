@@ -1,18 +1,15 @@
 __all__ = ['Plugin']
 
 import os.path
-import subprocess
-from datetime import timedelta
-
-from googleapiclient.http import MediaFileUpload
-
-from studip_sync.helpers import JSONConfig, ConfigError
-from studip_sync.plugins import PluginBase
 import pickle
 
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
+from studip_sync.helpers import JSONConfig
+from studip_sync.plugins import PluginBase
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 
