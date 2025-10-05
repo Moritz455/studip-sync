@@ -1,5 +1,6 @@
 __all__ = ['Plugin']
 
+import mimetypes
 import os.path
 import subprocess
 from datetime import timedelta
@@ -128,8 +129,42 @@ class Plugin(PluginBase):
         self.save_plugin_config(config)
 
     def hook_file_download_successful(self, filename, course_save_as, full_filepath):
+
+        file_extension = os.path.splitext(filename)[1][1:]
+
+        if file_extension not in ["aac", "adts", "mid", "midi", "mp3", "mpga", "m4a", "m4b", "mp4",
+                                  "oga", "ogg", "wav", "wma", "pdf", "txt", "json", "doc", "dot",
+                                  "docx", "dotx", "xls", "xlt", "xla", "xlsx", "xltx", "ppt",
+                                  "pot", "pps", "ppa", "pptx", "potx", "gif", "heic", "jpeg",
+                                  "jpg", "png", "svg", "tif", "tiff", "webp", "ico", "amv", "asf",
+                                  "wmv", "avi", "f4v", "flv", "gifv", "m4v", "mp4", "mkv", "webm",
+                                  "mov", "qt", "mpeg"]:
+            print("Invalid file extension.")
+            return
         if self.config and self.config.datasource_id:
             parent_datasource_id = self.config.datasource_id
+        else:
+            return
+        body = {
+            "mode": "single_part",
+            "filename": filename,
+        }
+        self.print("Uploading new File: " + filename)
+        result = self.send_post_request("file_uploads", body)
+        if result.get('object') == 'file_upload':
+            upload_id = result.get('id')
+        # Abbruch Bedingung
+        else:
+            return
+        # Todo: Wie Datei als File übergeben
+        result = self.send_post_request("file_uploads", querry=True, files=full_filepath,
+                                        file_upload_id=upload_id, additional_path="send")
+        # result = self.send_post_request("file_uploads", querry=True, file_upload_id=upload_id, additional_path="complete")
+        if result.get('object') == 'file_upload' and result.get('status') == 'uploaded':
+            file_id = result.get('id')
+        # Abbruch Bedingung
+        else:
+            return
 
         body = {
             "parent": {
@@ -151,7 +186,10 @@ class Plugin(PluginBase):
                     }
                 },
                 "File": {
-                    "files": {}
+                    "files": {
+                        "id": file_id,
+                        "filename": filename
+                    }
                 }
             }
         }
