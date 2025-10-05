@@ -6,7 +6,6 @@ from datetime import timedelta
 
 from studip_sync.helpers import JSONConfig, ConfigError
 from studip_sync.plugins import PluginBase
-import pickle
 
 import requests
 
@@ -103,11 +102,6 @@ class Plugin(PluginBase):
                         "name": "Upload Date",
                         "type": "created_time",
                         "created_time": {}
-                    },
-                    "File": {
-                        "name": "File",
-                        "type": "files",
-                        "files": {}
                     }
                 },
                 "title": [
@@ -130,6 +124,8 @@ class Plugin(PluginBase):
     def hook_file_download_successful(self, filename, course_save_as, full_filepath):
         if self.config and self.config.datasource_id:
             parent_datasource_id = self.config.datasource_id
+        else:
+            return
 
         body = {
             "parent": {
@@ -149,9 +145,6 @@ class Plugin(PluginBase):
                     "select": {
                         "name": course_save_as
                     }
-                },
-                "File": {
-                    "files": {}
                 }
             }
         }
@@ -191,8 +184,6 @@ class Plugin(PluginBase):
             target_id = kwargs.get("database_id") or self.config.database_id
         elif endpoint == 'data_sources' and querry == True:
             target_id = kwargs.get("datasource_id") or self.config.datasource_id
-        elif endpoint == 'file_uploads' and querry == True:
-            target_id = kwargs.get("file_upload_id")
 
         url = f"{BASE_URL}/{endpoint}"
         if target_id:
@@ -200,28 +191,10 @@ class Plugin(PluginBase):
         if additional_path:
             url = f"{url}/{additional_path}"
 
-        if kwargs.get("files"):
-            filepath = kwargs.get("files")
-            filename = os.path.basename(filepath)
-            mime_type, _ = mimetypes.guess_type(filepath)
-            if mime_type is None:
-                mime_type = 'application/octet-stream'
-            with open(filepath, 'rb') as f:
-                files = {
-                    'file': (filename, f, mime_type)
-                }
-                headers = {
-                    "Authorization": "Bearer " + notion_token,
-                    "Notion-Version": "2025-09-03",
-                    "Content-Type": "singlepart/form-data"
-                }
-                # Todo: Warum unauthorized?
-                response = requests.post(url, headers, files=files)
-        else:
-            headers = {
-                "Authorization": "Bearer " + notion_token,
-                "Content-Type": "application/json",
-                "Notion-Version": "2025-09-03",
-            }
-            response = requests.post(url, headers=headers, json=payload)
+        headers = {
+            "Authorization": "Bearer " + notion_token,
+            "Content-Type": "application/json",
+            "Notion-Version": "2025-09-03",
+        }
+        response = requests.post(url, headers=headers, json=payload)
         return response.json()
