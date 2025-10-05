@@ -1,13 +1,9 @@
 __all__ = ['Plugin']
 
-import os.path
-import subprocess
-from datetime import timedelta
-
-from studip_sync.helpers import JSONConfig, ConfigError
-from studip_sync.plugins import PluginBase
-
 import requests
+
+from studip_sync.helpers import JSONConfig
+from studip_sync.plugins import PluginBase
 
 BASE_URL = 'https://api.notion.com/v1'
 
