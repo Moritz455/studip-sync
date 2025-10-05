@@ -98,6 +98,11 @@ class Plugin(PluginBase):
                         "type": "select",
                         "select": {}
                     },
+                    "Viewed": {
+                        "name": "Viewed",
+                        "type": "checkbox",
+                        "checkbox": {}
+                    },
                     "Upload Date": {
                         "name": "Upload Date",
                         "type": "created_time",
