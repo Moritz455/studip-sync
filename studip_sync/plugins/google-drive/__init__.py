@@ -30,7 +30,7 @@ class Plugin(PluginBase):
         super(Plugin, self).hook_configure()
 
         credentials = None
-        # The file token.pickle stores the user's access and refresh tokens, and is
+        # The file token.pickle stores the user's access and refresh tokens and is
         # created automatically when the authorization flow completes for the first
         # time.
 
@@ -90,26 +90,9 @@ class Plugin(PluginBase):
         self.service = build('drive', 'v3', credentials=credentials)
 
     def hook_file_download_successful(self, filename, course_save_as, full_filepath):
-        # Todo: Verarbeitung und Upload von Videos hinzufügen
-        # file_extension = os.path.splitext(filename)[1][1:]
-
-        #        if self.config and self.config.video_filetype and file_extension not in self.config.video_filetype:
-        #            self.print("Skipping file: " + filename)
-        #            return
-
-        description = course_save_as
-
-        #        if self.config and self.config.display_video_length and file_extension in DISPLAY_VIDEO_LENGTH_ALLOWED_FILETYPES:
-        #            video_length = get_video_length_of_file(full_filepath)
-        #            video_length_seconds = int(video_length)
-        #            video_length_str = str(timedelta(seconds=video_length_seconds))
-        #
-        #            description = "{}: {}".format(video_length_str, description)
-
-        return self.upload_new_file(filename, description, full_filepath)
+        return self.upload_new_file(filename, course_save_as, full_filepath)
 
     def upload_new_file(self, filename, course, filepath):
-
         if course and self.config and self.config.upload_folder_id:
             parent_folder_id = self._get_or_create_folder(course, self.config.upload_folder_id)
         elif self.config and self.config.upload_folder_id:
@@ -127,8 +110,7 @@ class Plugin(PluginBase):
         return self.service.files().create(body=body, media_body=media).execute()
 
     def _get_or_create_folder(self, folder_name, parent_folder_id):
-
-        # Suche nach existierendem Ordner
+        # Check if folder exists
         query = f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}' and '{parent_folder_id}' in parents and trashed = false"
 
         results = self.service.files().list(
@@ -141,10 +123,9 @@ class Plugin(PluginBase):
         items = results.get('files', [])
 
         if items:
-            # Ordner existiert bereits
             return items[0]['id']
         else:
-            # Erstelle neuen Ordner
+            # Create new folder
             folder_metadata = {
                 'name': folder_name,
                 'mimeType': 'application/vnd.google-apps.folder',
@@ -156,12 +137,11 @@ class Plugin(PluginBase):
                 fields='id'
             ).execute()
 
-            self.print(f"Ordner erstellt: {folder_name}")
+            self.print(f"Folder created: {folder_name}")
             return folder.get('id')
 
 
 class PluginConfig(JSONConfig):
-
     @property
     def upload_folder_id(self):
         if not self.config:
