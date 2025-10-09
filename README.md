@@ -10,8 +10,10 @@ could work at other universities with similar authentication methods.
 ## Installation
 
 ### Using pipx (recommended)
+
 Make sure you have [pipx](https://pipx.pypa.io) installed.
 Then run
+
 ```shell
 pipx install git+https://github.com/studip-sync/studip-sync.git
 ```
@@ -36,10 +38,11 @@ To create a permanent configuration:
 **Important Note**: If you install studip-sync as a snap, you cannot use `~` to reference your home directory in the
 config file. If you ignore this note, the files will be synced to `snap/studip-sync/current/...`
 
-**Limitation**: The snap can only write to non-hidden directories in you home directory. If you omit Step 3, it cannot
+**Limitation**: The snap can only write to non-hidden directories in your home directory. If you omit Step 3, it cannot
 write to your home directory at all.
 
 ### On Arch Linux (AUR)
+
 Install [studip-sync-git](https://aur.archlinux.org/packages/studip-sync-git/) from the AUR.
 
 ## Configuration
@@ -74,6 +77,7 @@ If you omit the `login` or `password`, studip-sync will ask for them interactive
 
 studip-sync checks if new files have been edited since the last sync to limit the data which needs to be downloaded on every sync.
 If you don't want this to happen and prefer to always download all data, use:
+
 ```shell
 ./studip_sync.py --full
 ```
@@ -81,11 +85,13 @@ If you don't want this to happen and prefer to always download all data, use:
 ### Only sync the last semester
 
 To sync only the last semester and skip older courses, use the `--recent` flag. (This option will be ignored if `--full` is supplied).
+
 ```shell
 ./studip_sync.py --recent
 ```
 
 ### Running studip-sync manually
+
 ```shell
 # Synchronizes files to /path/to/sync/dir
 # and uses a non-default location for the config file (here: ./config.json)
@@ -96,12 +102,13 @@ To sync only the last semester and skip older courses, use the `--recent` flag. 
 ```
 
 ### Automation using a cron job
+
 Run `crontab -e` and add the following lines:
+
 ```
 # Run at 8:00, 13:00 and 19:00 every day.
 0 8,13,19 * * *  /path/to/studip-sync/studip_sync.py
 ```
-
 
 ## Plugin support
 
@@ -112,15 +119,25 @@ To reconfigure a plugin run `studip-sync --reconfigure-plugin PLUGIN`.
 
 ### Google Tasks API
 
-This plugin can add a new task on each successful media download into a list at Google Tasks. 
+This plugin can add a new task on each successful media download into a list at Google Tasks.
 
 To use this plugin you need to have a Google Cloud project with Tasks API enabled.
 Download the `credentials.json` from Google Cloud and place it at `.config/studip-sync/google-tasks/credentials.json`.
 Then run `studip-sync --enable-plugin google-tasks` and authenticate this plugin over OAuth with your Google account.
 Finally, enter the task list id of your specified task list. For this you need to create a task list at Google Tasks first.
 
+### Google Drive API
+
+This plugin can upload files the downloaded media to a specific Google Drive folder.
+
+To use this plugin you need to have a Google Cloud project with Drive API enabled. The Plugin needs to have access to
+the scopes `.../auth/drive` and `.../auth/drive.metadata.readonly`. Download the `credentials.json` from Google Cloud
+and place it at `.config/studip-sync/google-drive/credentials.json`.
+Then run `studip-sync --enable-plugin google-drive` and authenticate this plugin over OAuth with your Google account.
+Finally, enter the folder id of your specified root folder in Google Drive.
 
 ## History
+
 * **2020 - today**: [@lenke182](https://github.com/lenke182) has taken over development and maintenance of the project.
 * **2015 - 2019**: Developed and maintained by [@woefe](https://github.com/woefe). During that time studip-sync was compatible with Stud.IP deployed at University of Passau.
 
