@@ -9,6 +9,13 @@ if ARGS.init:
         creator.new_config()
     exit()
 
+if getattr(ARGS, "init_from_env", False):
+    with ConfigCreator() as creator:
+        if not creator.init_from_env():
+            print("Failed to initialize config from environment variables!")
+            exit(1)
+    exit()
+
 from studip_sync.plugins.plugin_helper import PluginHelper
 
 if ARGS.enable_plugin:

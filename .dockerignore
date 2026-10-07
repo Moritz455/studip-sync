@@ -1,0 +1,28 @@
+.git
+.github
+.idea
+.venv
+venv
+ENV
+env
+.tox
+.coverage
+htmlcov
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+dist
+build
+docs/
+tests/
+
+# Prevent LF Characters from causing issues
+*.sh text eol=lf
+
+# Ignore local config and data from being baked into the image
+.config/
+studip_files/
+studip_media/
+*.log
+.env

@@ -19,6 +19,9 @@ def parse_args():
     parser.add_argument("--init", action="store_true",
                         help="create new config file interactively")
 
+    parser.add_argument("--init-from-env", action="store_true",
+                        help="create new config file from environment variables")
+
     parser.add_argument("--full", action="store_true",
                         help="downloads all courses instead of only new ones")
 

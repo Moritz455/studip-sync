@@ -1,0 +1,23 @@
+services:
+    studip-sync:
+        image: ghcr.io/Moritz455/studip-sync:latest
+        container_name: studip-sync
+        restart: unless-stopped
+
+        environment:
+            TZ: Europe/Berlin
+            CRON_INTERVAL: "0 8,13,19 * * *" # Disable with: "none", "off", "disabled" or "0" Default: 08:00, 13:00, 19:00
+            STUDIP_RUN_ON_STARTUP: "true" # Default: true
+            #STUDIP_CONFIG_FILE: /app/.config/config.json # Optional leave blank
+
+            # Credentials:
+            STUDIP_USERNAME: ${STUDIP_USERNAME}
+            STUDIP_PASSWORD: ${STUDIP_PASSWORD}
+
+        # Optional: Use a dedicated studip-sync.env environment file
+        #    env_file: studip-sync.env
+
+        volumes:
+            - ./config:/app/.config # config Directory
+            - ./studip_files:/app/studip_files
+#       - /etc/localtime:/etc/localtime:ro

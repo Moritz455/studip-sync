@@ -10,16 +10,18 @@ class JSONConfig(object):
     def __init__(self, config_path=None):
         super(JSONConfig, self).__init__()
 
-        try:
-            config_file = open(config_path)
-        except FileNotFoundError:
+        if not config_path:
             raise ConfigError("Config file missing! Run 'studip-sync --init' to create a new "
                               "config file")
 
-        if config_file:
-            self.config = json.load(config_file)
-        else:
-            self.config = None
+        try:
+            with open(config_path, "r", encoding="utf-8") as config_file:
+                self.config = json.load(config_file)
+        except (FileNotFoundError, TypeError):
+            raise ConfigError("Config file missing! Run 'studip-sync --init' to create a new "
+                              "config file")
+        except json.JSONDecodeError as e:
+            raise ConfigError(f"Invalid JSON in config file '{config_path}': {e}")
 
         self._check()
 
@@ -28,7 +30,9 @@ class JSONConfig(object):
 
     @staticmethod
     def save_config(path, config):
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as config_file:
+        dirname = os.path.dirname(path)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as config_file:
             print("Writing new config to '{}'".format(path))
             json.dump(config, config_file, ensure_ascii=False, indent=4)

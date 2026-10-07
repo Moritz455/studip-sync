@@ -90,7 +90,13 @@ class Config(JSONConfig):
         if self._username:
             return self._username
 
-        self._username = self.user_property("login") or input("Username: ")
+        login = self.user_property("login")
+        if not login:
+            try:
+                login = input("Username: ")
+            except (EOFError, OSError):
+                login = None
+        self._username = login
         return self._username
 
     def _get_password_command(self):
@@ -111,8 +117,13 @@ class Config(JSONConfig):
         if self._password:
             return self._password
 
-        self._password = self.user_property(
-            "password") or self._get_password_command() or getpass.getpass()
+        pw = self.user_property("password") or self._get_password_command()
+        if not pw:
+            try:
+                pw = getpass.getpass()
+            except (EOFError, OSError):
+                pw = None
+        self._password = pw
         return self._password
 
     @property
