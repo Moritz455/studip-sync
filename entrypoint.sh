@@ -29,10 +29,11 @@ if [ ! -f "${CONFIG_FILE}" ]; then
     echo "Config file not found at '${CONFIG_FILE}'."
 
     # If environment variables for configuration are set, initialize from env
-    if [ -n "${STUDIP_USERNAME:-${STUDIP_USER:-${STUDIP_LOGIN:-}}}" ]; then
-        echo "Initializing configuration from environment variables..."
-        python3 studip_sync.py --init-from-env --config "${CONFIG_FILE}"
-    else
+        if [ -n "${STUDIP_USERNAME:-${STUDIP_USER:-${STUDIP_LOGIN:-}}}" ]; then
+            echo "Provider: ${STUDIP_PROVIDER:-<not set>}"
+            echo "Initializing configuration from environment variables..."
+            python3 studip_sync.py --init-from-env --config "${CONFIG_FILE}"
+        else
         echo "Please create it manually by running: python3 studip_sync.py --init --config '${CONFIG_FILE}'"
         echo "Waiting for the config file to appear..."
          # Allow 'docker stop' to terminate the container cleanly

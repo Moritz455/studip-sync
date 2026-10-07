@@ -18,6 +18,11 @@ LOGIN_PRESETS = [
             "sso_post_url": "https://studip.hochschule-trier.de/Shibboleth.sso/SAML2/POST"
         })
 ]
+LOGIN_PRESET_KEYS = {
+    "goettingen": LOGIN_PRESETS[0],
+    "passau": LOGIN_PRESETS[1],
+    "trier": LOGIN_PRESETS[2],
+}
 AUTHENTICATION_TYPES = {"general": GeneralLogin,
                         "shibboleth": ShibbolethLogin}
 AUTHENTICATION_TYPE_DEFAULT = "general"

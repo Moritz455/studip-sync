@@ -1,12 +1,12 @@
 import getpass
+import json
 import os
 
 from studip_sync import get_config_file
 from studip_sync.constants import (
     LOGIN_PRESETS,
+    LOGIN_PRESET_KEYS,
     AUTHENTICATION_TYPES,
-    AUTHENTICATION_TYPE_DEFAULT,
-    URL_BASEURL_DEFAULT,
 )
 from studip_sync.helpers import JSONConfig
 from studip_sync.session import Session
@@ -69,6 +69,74 @@ def get_url_and_auth_type():
     base_url = input("URL of StudIP: ")
     auth_key, auth_type = choose_authentication_type()
     auth_data = auth_type.config_creator_get_auth_data()
+
+    return base_url, auth_key, auth_data
+
+
+CUSTOM_PROVIDER_KEY = "custom"
+
+
+class EnvConfigError(ValueError):
+    pass
+
+
+def _env(*names):
+    """Returns the first non-empty environment variable of the given names"""
+    for name in names:
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return None
+
+
+def get_login_from_env():
+    """Returns (base_url, auth_key, auth_data) based on STUDIP_PROVIDER"""
+    valid = ", ".join(list(LOGIN_PRESET_KEYS) + [CUSTOM_PROVIDER_KEY])
+    provider = (_env("STUDIP_PROVIDER") or "").lower()
+
+    if not provider:
+        raise EnvConfigError(f"STUDIP_PROVIDER is not set. Valid values: {valid}")
+
+    if provider != CUSTOM_PROVIDER_KEY:
+        preset = LOGIN_PRESET_KEYS.get(provider)
+        if preset is None:
+            raise EnvConfigError(f"Unknown STUDIP_PROVIDER '{provider}'. Valid values: {valid}")
+        return preset.base_url, preset.auth_type, dict(preset.auth_data)
+
+    # Custom server: everything comes from environment variables
+    base_url = _env("STUDIP_BASE_URL", "BASE_URL")
+    auth_key = _env("STUDIP_AUTH_TYPE")
+
+    missing = [name for name, value in (("STUDIP_BASE_URL", base_url),
+                                        ("STUDIP_AUTH_TYPE", auth_key)) if not value]
+    if missing:
+        raise EnvConfigError("STUDIP_PROVIDER=custom requires: " + ", ".join(missing))
+
+    if auth_key not in AUTHENTICATION_TYPES:
+        raise EnvConfigError(f"Unknown STUDIP_AUTH_TYPE '{auth_key}'. "
+                             f"Valid values: {', '.join(AUTHENTICATION_TYPES)}")
+
+    # STUDIP_AUTH_TYPE_DATA is optional and must be a JSON object
+    raw_data = _env("STUDIP_AUTH_TYPE_DATA")
+    try:
+        auth_data = json.loads(raw_data) if raw_data else {}
+    except json.JSONDecodeError as e:
+        raise EnvConfigError(f"STUDIP_AUTH_TYPE_DATA is not valid JSON: {e}")
+    if not isinstance(auth_data, dict):
+        raise EnvConfigError("STUDIP_AUTH_TYPE_DATA must be a JSON object")
+
+    # Dedicated variables take precedence over STUDIP_AUTH_TYPE_DATA
+    login_url = _env("STUDIP_LOGIN_URL", "STUDIP_AUTH_LOGIN_URL")
+    sso_post_url = _env("STUDIP_SSO_POST_URL", "STUDIP_AUTH_SSO_POST_URL")
+    if login_url:
+        auth_data["login_url"] = login_url
+    if sso_post_url:
+        auth_data["sso_post_url"] = sso_post_url
+
+    if auth_key == "shibboleth":
+        missing = [k for k in ("login_url", "sso_post_url") if not auth_data.get(k)]
+        if missing:
+            raise EnvConfigError("auth type 'shibboleth' requires: " + ", ".join(missing))
 
     return base_url, auth_key, auth_data
 
@@ -152,52 +220,15 @@ class ConfigCreator(object):
         )
         password_cmd = os.environ.get("STUDIP_PASSWORD_COMMAND")
 
-        base_url = (
-            os.environ.get("STUDIP_BASE_URL")
-            or os.environ.get("BASE_URL")
-            or URL_BASEURL_DEFAULT
-        )
-
-        preset_choice = os.environ.get("STUDIP_PRESET", "").lower().strip()
-        selected_preset = None
-        if preset_choice:
-            try:
-                preset_idx = int(preset_choice) - 1
-                if 0 <= preset_idx < len(LOGIN_PRESETS):
-                    selected_preset = LOGIN_PRESETS[preset_idx]
-            except ValueError:
-                for p in LOGIN_PRESETS:
-                    if preset_choice in p.name.lower() or preset_choice in p.base_url.lower():
-                        selected_preset = p
-                        break
-
-        if not selected_preset:
-            for p in LOGIN_PRESETS:
-                if p.base_url.rstrip("/") == base_url.rstrip("/"):
-                    selected_preset = p
-                    break
-
-        if selected_preset:
-            base_url = selected_preset.base_url
-            auth_key = selected_preset.auth_type
-            auth_data = dict(selected_preset.auth_data)
-        else:
-            auth_key = os.environ.get("STUDIP_AUTH_TYPE", AUTHENTICATION_TYPE_DEFAULT)
-            auth_data = {}
-            if auth_key == "shibboleth":
-                login_url = os.environ.get("STUDIP_LOGIN_URL") or os.environ.get(
-                    "STUDIP_AUTH_LOGIN_URL")
-                sso_post_url = os.environ.get("STUDIP_SSO_POST_URL") or os.environ.get(
-                    "STUDIP_AUTH_SSO_POST_URL")
-                if login_url:
-                    auth_data["login_url"] = login_url
-                if sso_post_url:
-                    auth_data["sso_post_url"] = sso_post_url
+        try:
+            base_url, auth_key, auth_data = get_login_from_env()
+        except EnvConfigError as e:
+            print(f"ERROR: {e}")
+            return False
 
         files_destination = (
             os.environ.get("STUDIP_FILES_DESTINATION")
             or os.environ.get("STUDIP_FILES_DEST")
-            or os.environ.get("FILES_DESTINATION")
             or "./studip_files"
         )
         media_destination = (

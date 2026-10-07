@@ -1,6 +1,6 @@
 services:
     studip-sync:
-        image: ghcr.io/Moritz455/studip-sync:latest
+        image: ghcr.io/moritz455/studip-sync:beta
         container_name: studip-sync
         restart: unless-stopped
 
@@ -11,13 +11,20 @@ services:
             #STUDIP_CONFIG_FILE: /app/.config/config.json # Optional leave blank
 
             # Credentials:
+            STUDIP_PROVIDER: trier # Choose from :goettingen | passau | trier | custom
             STUDIP_USERNAME: ${STUDIP_USERNAME}
             STUDIP_PASSWORD: ${STUDIP_PASSWORD}
+
+            # Custom Provider:
+        #            STUDIP_BASE_URL: "https://studip.example.de"
+        #            STUDIP_AUTH_TYPE: shibboleth # Choose from: general | shibboleth
+        #            STUDIP_LOGIN_URL: "https://studip.example.de/index.php?again=yes&sso=shib"
+        #            STUDIP_SSO_POST_URL: "https://studip.example.de/Shibboleth.sso/SAML2/POST"
 
         # Optional: Use a dedicated studip-sync.env environment file
         #    env_file: studip-sync.env
 
         volumes:
-            - ./config:/app/.config # config Directory
+            #            - ./.config:/app/.config # config Directory
             - ./studip_files:/app/studip_files
 #       - /etc/localtime:/etc/localtime:ro
