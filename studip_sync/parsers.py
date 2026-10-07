@@ -1,9 +1,10 @@
 import json
 import re
 from email.message import EmailMessage
-
 from functools import wraps
+
 from bs4 import BeautifulSoup
+
 
 def log_html_on_exception():
     def decorator(func):
@@ -13,7 +14,7 @@ def log_html_on_exception():
                 return func(html, *args, **kwargs)
             except Exception as e:
                 print(html)
-                
+
                 raise e
 
         return inner
@@ -132,27 +133,46 @@ def extract_csrf_token(html):
 def extract_courses(html, only_recent_semester):
     soup = BeautifulSoup(html, 'lxml')
 
-    p = re.compile("MyCoursesData = (.*);")
-    courses = None
-    for script in soup.find_all("script"):
-        try: 
-            courses = json.loads(script.string.split("MyCoursesData = ")[1].split(";")[0])
-        except Exception:
-            continue
+    courses_data = None
 
-    if courses is None:
+    # New parser for studip version 5.0+
+    vuex_script = soup.find("script", id="vue-vuex-store-data-mycourses")
+    if vuex_script and vuex_script.string:
+        try:
+            raw_data = json.loads(vuex_script.string)
+            courses_data = {
+                "groups": raw_data.get("setGroups", []),
+                "courses": raw_data.get("setCourses", {})
+            }
+        except Exception:
+            pass
+    # Old fallback parser
+    if courses_data is None:
+        for script in soup.find_all("script"):
+            if script.string and "MyCoursesData = " in script.string:
+                try:
+                    courses_data = json.loads(
+                        script.string.split("MyCoursesData = ")[1].split(";")[0])
+                    break
+                except Exception:
+                    continue
+
+    if courses_data is None:
         raise ParserError("Could not find courses")
 
-    for i, group in enumerate(courses["groups"]):
-        semester_name = group["name"].strip()
-        semester_id = len(courses["groups"]) - i
+    groups = courses_data["groups"]
+    courses_dict = courses_data["courses"]
 
-        if only_recent_semester and semester_id != len(courses["groups"]):
+    for i, group in enumerate(groups):
+        semester_name = group["name"].strip()
+        semester_id = len(groups) - i
+
+        if only_recent_semester and semester_id != len(groups):
             continue
-    
+
         course_ids = group["data"][0]["ids"]
-        for course_id  in course_ids:
-            course = courses["courses"][course_id]
+        for course_id in course_ids:
+            course = courses_dict[course_id]
             save_as = course["name"].strip()
             save_as = re.sub(r"\s\s+", " ", save_as)
             save_as = save_as.replace("/", "--")
